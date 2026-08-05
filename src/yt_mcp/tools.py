@@ -130,12 +130,14 @@ def get_video_transcript(
         "Only return the transcript up to this offset",
     ] = None,
 ) -> Transcript:
-    """Get a video's transcript as '[MM:SS] text' lines you can quote and cite.
+    """Get a video's transcript as timestamped lines you can quote and cite.
 
-    Quote the timestamps back so claims stay traceable, e.g. "at [03:15] he says
-    the battery is 17% larger than last year". Narrow long videos with
-    start_seconds and end_seconds. Reads public caption tracks, so it costs no
-    API quota.
+    Every line starts with a Markdown link that seeks to that moment, so quoting
+    a timestamp back keeps claims traceable and clickable — e.g. "at
+    [[03:15]](https://www.youtube.com/watch?v=ID&t=195) he says the battery is
+    17% larger than last year". Reproduce those links verbatim rather than
+    rewriting them as plain text. Narrow long videos with start_seconds and
+    end_seconds. Reads public caption tracks, so it costs no API quota.
     """
     return get_transcript(
         video,

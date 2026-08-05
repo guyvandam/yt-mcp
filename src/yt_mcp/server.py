@@ -29,7 +29,9 @@ def _create_server() -> FastMCP:
             "or RFC 3339 timestamps.\n"
             "- Use search_channel_videos to find a video, then get_video_transcript for "
             "what was said and when, and get_video_details for the description and the "
-            "links the creator cited."
+            "links the creator cited.\n"
+            "- Transcript timestamps come back as Markdown links that seek to that "
+            "moment; keep them intact when quoting so every claim stays clickable."
         ),
     )
 

@@ -8,10 +8,12 @@ from yt_mcp.errors import InvalidDateError
 from yt_mcp.parsing import (
     extract_links,
     format_timestamp,
+    format_timestamp_link,
     parse_channel_reference,
     parse_date_filter,
     parse_iso_duration,
     parse_video_id,
+    timestamp_url,
     to_rfc3339,
 )
 
@@ -127,3 +129,23 @@ def test_extract_links_dedupes_and_trims() -> None:
 def test_extract_links_handles_empty() -> None:
     """A description with no links yields an empty list."""
     assert extract_links("") == []
+
+
+def test_timestamp_url_appends_whole_seconds() -> None:
+    """A seek URL carries the offset truncated to whole seconds."""
+    assert (
+        timestamp_url("dQw4w9WgXcQ", 195.7)
+        == "https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=195"
+    )
+
+
+def test_timestamp_url_clamps_negative_offsets() -> None:
+    """A negative offset seeks to the start rather than emitting a bad URL."""
+    assert timestamp_url("dQw4w9WgXcQ", -5.0).endswith("&t=0")
+
+
+def test_format_timestamp_link_keeps_the_bracketed_timestamp() -> None:
+    """The link text stays '[MM:SS]' so it still reads as a citation."""
+    assert format_timestamp_link("dQw4w9WgXcQ", 195.0) == (
+        "[[03:15]](https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=195)"
+    )

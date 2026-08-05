@@ -232,3 +232,32 @@ def watch_url(video_id: str) -> str:
         The full watch URL.
     """
     return f"https://www.youtube.com/watch?v={video_id}"
+
+
+def timestamp_url(video_id: str, seconds: float) -> str:
+    """Build a watch URL that starts playback at an offset.
+
+    Args:
+        video_id: The 11-character video id.
+        seconds: Offset from the start of the video; negatives clamp to zero.
+
+    Returns:
+        The watch URL with YouTube's ``t`` parameter, in whole seconds.
+    """
+    return f"{watch_url(video_id)}&t={max(0, int(seconds))}"
+
+
+def format_timestamp_link(video_id: str, seconds: float) -> str:
+    """Render a position in a video as a Markdown link that seeks to it.
+
+    The timestamp keeps its square brackets inside the link text, so it still
+    reads as ``[MM:SS]`` once rendered and stays quotable as a citation.
+
+    Args:
+        video_id: The 11-character video id.
+        seconds: Offset from the start of the video.
+
+    Returns:
+        A Markdown link such as ``[[03:15]](https://...&t=195)``.
+    """
+    return f"[[{format_timestamp(seconds)}]]({timestamp_url(video_id, seconds)})"

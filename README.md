@@ -29,7 +29,8 @@
 
 ## Transcripts
 
-- Lines are formatted `[MM:SS] text`, gaining an hour component past an hour — `[03:15] the battery is 17% larger than previous year`.
+- Lines are formatted `[[MM:SS]](watch url with &t=seconds) text`, gaining an hour component past an hour — `[[03:15]](https://www.youtube.com/watch?v=ID&t=195) the battery is 17% larger than previous year`.
+- The timestamp is a Markdown link that seeks to that moment, so a quoted line carries its own clickable citation; the link points at the start of the merged window, not the last cue in it.
 - `chunk_seconds` merges caption cues into windows of that length; `0` keeps YouTube's raw cues.
 - `start_seconds` and `end_seconds` narrow a long video to one stretch.
 - `languages` picks the track by language code; with none given the video's original spoken language is used.

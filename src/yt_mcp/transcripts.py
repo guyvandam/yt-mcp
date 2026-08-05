@@ -5,6 +5,7 @@ so transcripts come from ``youtube-transcript-api``, which reads the same public
 caption tracks the web player uses. No API key or quota is involved.
 """
 
+from functools import partial
 from typing import Any
 
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -12,7 +13,7 @@ from youtube_transcript_api._errors import CouldNotRetrieveTranscript
 
 from yt_mcp.errors import TranscriptUnavailableError, VideoNotFoundError
 from yt_mcp.models import Transcript
-from yt_mcp.parsing import format_timestamp, parse_video_id, watch_url
+from yt_mcp.parsing import format_timestamp_link, parse_video_id, watch_url
 
 DEFAULT_CHUNK_SECONDS = 30.0
 """Default window that raw caption cues are merged into, to keep output compact."""
@@ -38,7 +39,8 @@ def get_transcript(
         end_seconds: Drop everything at or after this offset, or ``None``.
 
     Returns:
-        The transcript, with ``text`` formatted as ``[MM:SS] line`` rows.
+        The transcript, with ``text`` formatted as ``[[MM:SS]](url) line`` rows
+        whose links seek to that moment in the video.
 
     Raises:
         VideoNotFoundError: If the reference cannot be parsed.
@@ -62,7 +64,7 @@ def get_transcript(
     if not snippets:
         raise TranscriptUnavailableError(video_id, "no caption cues in that time range")
 
-    lines = _chunk(snippets, chunk_seconds)
+    lines = _chunk(snippets, chunk_seconds, video_id)
     last = snippets[-1]
 
     return Transcript(
@@ -138,19 +140,21 @@ def _within(start: float, lower: float | None, upper: float | None) -> bool:
     return not (upper is not None and start >= upper)
 
 
-def _chunk(snippets: list[Any], chunk_seconds: float) -> list[str]:
+def _chunk(snippets: list[Any], chunk_seconds: float, video_id: str) -> list[str]:
     """Merge caption cues into timestamped lines.
 
     Args:
         snippets: Caption cues, in playback order.
         chunk_seconds: Approximate window per output line; ``0`` keeps one line
             per cue.
+        video_id: The video the cues came from, used to build the seek links.
 
     Returns:
-        Lines formatted as ``[MM:SS] text``.
+        Lines formatted as ``[[MM:SS]](watch url with &t=) text``.
     """
+    stamp = partial(format_timestamp_link, video_id)
     if chunk_seconds <= 0:
-        return [f"[{format_timestamp(s.start)}] {_clean(s.text)}" for s in snippets]
+        return [f"{stamp(s.start)} {_clean(s.text)}" for s in snippets]
 
     lines: list[str] = []
     window_start = snippets[0].start
@@ -158,7 +162,7 @@ def _chunk(snippets: list[Any], chunk_seconds: float) -> list[str]:
 
     for snippet in snippets:
         if buffer and snippet.start - window_start >= chunk_seconds:
-            lines.append(f"[{format_timestamp(window_start)}] {' '.join(buffer)}")
+            lines.append(f"{stamp(window_start)} {' '.join(buffer)}")
             window_start = snippet.start
             buffer = []
         text = _clean(snippet.text)
@@ -166,7 +170,7 @@ def _chunk(snippets: list[Any], chunk_seconds: float) -> list[str]:
             buffer.append(text)
 
     if buffer:
-        lines.append(f"[{format_timestamp(window_start)}] {' '.join(buffer)}")
+        lines.append(f"{stamp(window_start)} {' '.join(buffer)}")
     return lines
 
 

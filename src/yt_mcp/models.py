@@ -106,5 +106,9 @@ class Transcript(BaseModel):
     start_seconds: float = Field(description="Offset of the first returned line")
     end_seconds: float = Field(description="End offset of the last returned line")
     text: str = Field(
-        description="Transcript as '[MM:SS] text' lines, one per merged segment",
+        description=(
+            "Transcript as '[[MM:SS]](watch url with &t=seconds) text' lines, one "
+            "per merged segment; each timestamp is a Markdown link that seeks to "
+            "that moment, so quoting a line carries its own citation"
+        ),
     )
