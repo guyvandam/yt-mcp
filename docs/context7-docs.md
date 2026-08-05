@@ -1,0 +1,4 @@
+- fastmcp: /prefecthq/fastmcp
+- fastmcp-full-docs: /llmstxt/gofastmcp_llms-full_txt
+- youtube-transcript-api: /jdepoix/youtube-transcript-api
+- youtube-data-api-v3: /websites/developers_google_youtube_v3

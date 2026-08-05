@@ -6,6 +6,13 @@
 - `uv run yt-mcp` serves MCP over stdio.
 - `claude mcp add yt -- uv run --directory "$PWD" yt-mcp`, run from the repo root, registers it with Claude Code.
 
+## Deployment
+
+- `main.py` is the entrypoint hosts load, and `fastmcp.json` points at `main.py:mcp`.
+- Set the host's entrypoint to `main.py:mcp` — `src/yt_mcp/server.py` holds a bare server instance, because hosts load the entrypoint by file path and never run the package `__init__.py` that registers the tools.
+- `YOUTUBE_API_KEY` is read from the environment, so set it as a host secret; there is no `.env` in a deployment.
+- `uv run fastmcp inspect main.py:mcp` shows what a host will see, tool count included.
+
 ## Tools
 
 - `search_channel_videos` searches one channel's videos by keyword — search MKBHD channel for the latest iphone review.
