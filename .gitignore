@@ -1,0 +1,25 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+.DS_Store
+# ds_store - macos finder desktop-services store for folder-specific display settings.
+
+# Virtual environments
+.venv
+
+# MkDocs
+site/
+
+# data & output folders
+data/
+out/
+logs/
+models/
+
+# environment variables
+.env
+.env.secrets

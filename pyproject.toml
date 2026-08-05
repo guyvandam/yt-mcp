@@ -1,0 +1,28 @@
+[project]
+name = "yt-mcp"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.vulture]
+paths = ["src"]
+min_confidence = 80
+
+[tool.ruff.lint]
+extend-select = [
+    "D",    # pydocstyle — documentation
+    "C90",  # mccabe — cyclomatic complexity (needs max-complexity below)
+    "B",    # flake8-bugbear — likely bugs & design issues
+    "S",    # flake8-bandit — security
+    "EM",   # flake8-errmsg — exception message formatting
+    "TRY",  # tryceratops — exception handling antipatterns
+    "PTH",  # flake8-use-pathlib — prefer pathlib over os.path
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

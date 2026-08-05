@@ -1,0 +1,19 @@
+# Canonical prek / pre-commit config — copy into a project root:
+#   cp ~/.local-files/dev/.pre-commit-config.yaml .pre-commit-config.yaml
+#
+# Single source of truth: delegates to `lint-py` (ruff format + ruff check --fix
+# + ty) — the exact same script the Claude Code Stop hook runs. lint-py is
+# symlinked onto PATH by ../install.sh and reuses the globally uv-installed tools
+# (no per-repo environments; versions track the latest `uv tool install`).
+# Run manually across a repo with: prek run --all-files
+repos:
+  - repo: local
+    hooks:
+      - id: lint-py
+        name: lint-py (ruff format + check + ty)
+        entry: lint-py
+        language: system
+        types_or: [python, pyi]
+        # Staged files are passed to ruff so it scopes its work; lint-py runs ty
+        # across the whole module graph regardless (ty ignores the path args).
+        require_serial: true
