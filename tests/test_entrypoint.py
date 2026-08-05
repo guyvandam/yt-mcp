@@ -45,3 +45,12 @@ def test_configured_entrypoint_registers_every_tool(deployment_config: dict) -> 
     tools = asyncio.run(server.list_tools())
 
     assert {tool.name for tool in tools} == EXPECTED_TOOLS
+
+
+def test_server_module_registers_every_tool_when_path_loaded() -> None:
+    """A host aimed at the server module directly still sees every tool."""
+    server = load_by_path(REPO_ROOT / "src" / "yt_mcp" / "server.py", "mcp")
+
+    tools = asyncio.run(server.list_tools())
+
+    assert {tool.name for tool in tools} == EXPECTED_TOOLS

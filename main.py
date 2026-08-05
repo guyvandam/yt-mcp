@@ -6,7 +6,12 @@ Pointing a host straight at `src/yt_mcp/server.py` yields a server that connects
 and advertises zero tools.
 """
 
-from yt_mcp import mcp
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
+
+from yt_mcp import mcp  # noqa: E402 — the path above makes this import work uninstalled
 
 __all__ = ["mcp"]
 
