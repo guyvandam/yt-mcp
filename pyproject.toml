@@ -1,10 +1,29 @@
 [project]
 name = "yt-mcp"
 version = "0.1.0"
-description = "Add your description here"
+description = "MCP server for YouTube channel search, video listings, transcripts and descriptions"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "fastmcp>=2.0",
+    "google-api-python-client>=2.0",
+    "pydantic>=2.0",
+    "python-dotenv>=1.0",
+    "youtube-transcript-api>=1.0",
+]
+
+[project.scripts]
+yt-mcp = "yt_mcp.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/yt_mcp"]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
 
 [tool.vulture]
 paths = ["src"]
@@ -20,6 +39,11 @@ extend-select = [
     "TRY",  # tryceratops — exception handling antipatterns
     "PTH",  # flake8-use-pathlib — prefer pathlib over os.path
 ]
+
+[tool.ruff.lint.per-file-ignores]
+# Assertions are how pytest tests assert; the private helpers under test are
+# deliberately private.
+"tests/*" = ["S101", "SLF001"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
