@@ -50,6 +50,20 @@ class TranscriptUnavailableError(ToolError):
         super().__init__(f"No transcript available for video {video_id}: {reason}")
 
 
+class TranscriptBlockedError(ToolError):
+    """YouTube refused the caption request because of the caller's IP."""
+
+    def __init__(self, video_id: str, url_env: str, webshare_env: str) -> None:
+        """Build the error naming the env vars that configure a proxy."""
+        super().__init__(
+            f"YouTube blocked the caption request for video {video_id} by IP. This "
+            f"host's IP is rate limited or belongs to a cloud provider, whose "
+            f"ranges YouTube blocks; the video itself is fine. Route captions "
+            f"through a residential proxy by setting {url_env}, or {webshare_env} "
+            f"with its password.",
+        )
+
+
 class InvalidDateError(ToolError):
     """A date filter could not be parsed."""
 

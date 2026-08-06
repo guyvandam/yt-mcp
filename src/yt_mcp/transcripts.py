@@ -3,20 +3,56 @@
 The YouTube Data API only serves caption tracks to the channel owner via OAuth,
 so transcripts come from ``youtube-transcript-api``, which reads the same public
 caption tracks the web player uses. No API key or quota is involved.
+
+Because those requests look like a player rather than an API client, YouTube
+judges them by IP: residential addresses are served, and the cloud ranges a
+deployment runs in are blocked. A proxy is therefore optional locally and
+required in deployment — see :func:`yt_mcp.config.proxy_config`.
 """
 
 from functools import partial
 from typing import Any
 
 from youtube_transcript_api import YouTubeTranscriptApi
-from youtube_transcript_api._errors import CouldNotRetrieveTranscript
+from youtube_transcript_api._errors import CouldNotRetrieveTranscript, RequestBlocked
 
-from yt_mcp.errors import TranscriptUnavailableError, VideoNotFoundError
+from yt_mcp.config import (
+    PROXY_URL_ENV,
+    WEBSHARE_USERNAME_ENV,
+    proxy_config,
+)
+from yt_mcp.errors import (
+    TranscriptBlockedError,
+    TranscriptUnavailableError,
+    VideoNotFoundError,
+)
 from yt_mcp.models import Transcript
 from yt_mcp.parsing import format_timestamp_link, parse_video_id, watch_url
 
 DEFAULT_CHUNK_SECONDS = 30.0
 """Default window that raw caption cues are merged into, to keep output compact."""
+
+
+def _api() -> YouTubeTranscriptApi:
+    """Build a caption client bound to the configured proxy, if any.
+
+    Returns:
+        The client. The transcript handles it hands out keep its session, so the
+        later ``fetch()`` goes through the same proxy as the listing.
+    """
+    return YouTubeTranscriptApi(proxy_config=proxy_config())
+
+
+def _blocked(video_id: str) -> TranscriptBlockedError:
+    """Build the error for a caption request YouTube refused by IP.
+
+    Args:
+        video_id: The video whose captions were refused.
+
+    Returns:
+        The error, naming the proxy environment variables that fix it.
+    """
+    return TranscriptBlockedError(video_id, PROXY_URL_ENV, WEBSHARE_USERNAME_ENV)
 
 
 def get_transcript(
@@ -44,6 +80,7 @@ def get_transcript(
 
     Raises:
         VideoNotFoundError: If the reference cannot be parsed.
+        TranscriptBlockedError: If YouTube blocked this host's IP.
         TranscriptUnavailableError: If the video has no retrievable transcript.
     """
     video_id = parse_video_id(reference)
@@ -53,6 +90,8 @@ def get_transcript(
     available, chosen = _select_transcript(video_id, languages)
     try:
         fetched = chosen.fetch()
+    except RequestBlocked:
+        raise _blocked(video_id) from None
     except CouldNotRetrieveTranscript as error:
         raise TranscriptUnavailableError(video_id, _reason(error)) from None
 
@@ -94,10 +133,13 @@ def _select_transcript(
         The available language codes and the chosen transcript handle.
 
     Raises:
+        TranscriptBlockedError: If YouTube blocked this host's IP.
         TranscriptUnavailableError: If the video exposes no transcripts.
     """
     try:
-        listing = YouTubeTranscriptApi().list(video_id)
+        listing = _api().list(video_id)
+    except RequestBlocked:
+        raise _blocked(video_id) from None
     except CouldNotRetrieveTranscript as error:
         raise TranscriptUnavailableError(video_id, _reason(error)) from None
 

@@ -11,6 +11,7 @@
 - `main.py` is the entrypoint hosts load, and `fastmcp.json` points at `main.py:mcp`.
 - Set the host's entrypoint to `main.py:mcp` — `src/yt_mcp/server.py` holds a bare server instance, because hosts load the entrypoint by file path and never run the package `__init__.py` that registers the tools.
 - `YOUTUBE_API_KEY` is read from the environment, so set it as a host secret; there is no `.env` in a deployment.
+- Set proxy credentials as host secrets too, or `get_video_transcript` fails on every video while the other tools keep working — a host's IP is in a cloud range, and YouTube blocks those from caption tracks. See "Caption IP blocks".
 - `uv run fastmcp inspect main.py:mcp` shows what a host will see, tool count included.
 
 ## Tools
@@ -35,6 +36,15 @@
 - `start_seconds` and `end_seconds` narrow a long video to one stretch.
 - `languages` picks the track by language code; with none given the video's original spoken language is used.
 - Transcripts come from public caption tracks rather than the Data API, so they need no key and cost no quota.
+
+## Caption IP blocks
+
+- Caption tracks are served to the player rather than to the Data API, so YouTube judges the request by IP instead of by key: it blocks cloud provider ranges outright, and rate limits any single address that pulls transcripts in bulk. Both surface as `TranscriptBlockedError`, and both are about the caller, not the video.
+- A deployment therefore needs a proxy where a local checkout usually does not — the host's address is in a blocked range from the first request.
+- `WEBSHARE_PROXY_USERNAME` and `WEBSHARE_PROXY_PASSWORD` route captions through a rotating residential pool; set both. Rotation is what outlasts the rate limit, so this is the option to reach for.
+- `YOUTUBE_PROXY_URL` routes them through a single proxy instead, used for `http` and `https` alike. It is simpler, and it gets banned in turn once enough requests come from that one address.
+- Webshare wins when both are configured. With neither set, requests go direct.
+- The Data API tools are unaffected: they authenticate with the key and never hit this.
 
 ## Quota
 
