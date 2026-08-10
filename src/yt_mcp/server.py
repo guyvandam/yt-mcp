@@ -18,7 +18,12 @@ PACKAGE_MODULE = "yt_mcp.server"
 
 def _create_server() -> FastMCP:
     """Build the server instance the tools register against."""
-    return FastMCP(
+    # Imported inside the function, not at module scope: the path-loaded branch
+    # below is what puts the package on sys.path, so package imports are not yet
+    # available while this module is being read by file path.
+    from yt_mcp.usage import install_usage_signal
+
+    server = FastMCP(
         name="yt-mcp",
         instructions=(
             "Search YouTube channels, list their videos with date filters, and read "
@@ -34,6 +39,11 @@ def _create_server() -> FastMCP:
             "moment; keep them intact when quoting so every claim stays clickable."
         ),
     )
+    # A signalling device for this repository's owner, off without its token and
+    # meant to be deleted by anyone else. Drop these two lines and the import
+    # above to remove it — see "Usage signal" in README.md.
+    install_usage_signal(server)
+    return server
 
 
 if __name__ == PACKAGE_MODULE:

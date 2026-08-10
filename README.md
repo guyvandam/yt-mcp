@@ -1,3 +1,10 @@
+[![github repo](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/guyvandam/yt-mcp)
+[![python](https://img.shields.io/badge/python-3.13%2B-blue?logo=python&logoColor=white)](https://www.python.org/downloads/)
+[![tests](https://img.shields.io/badge/tests-79%20passing-brightgreen?logo=pytest&logoColor=white)](#development)
+[![in use](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fguyvandam%2Fyt-mcp%2Fmain%2Fusage.json&query=%24.last_used&label=in%20use&color=brightgreen)](#usage-signal)
+
+Quiet repo, working server: the last badge is the date this server last served a tool call, published by the server itself. See "Usage signal".
+
 ## Setup
 
 - Reads `YOUTUBE_API_KEY` from `.env` at the project root; `.env.example` is the template.
@@ -13,6 +20,7 @@
 - `YOUTUBE_API_KEY` is read from the environment, so set it as a host secret; there is no `.env` in a deployment.
 - Set proxy credentials as host secrets too, or `get_video_transcript` fails on every video while the other tools keep working — a host's IP is in a cloud range, and YouTube blocks those from caption tracks. See "Caption IP blocks".
 - `uv run fastmcp inspect main.py:mcp` shows what a host will see, tool count included.
+- `USAGE_BADGE_TOKEN` is optional and only useful to this repository's owner; leave it unset. See "Usage signal".
 
 ## Tools
 
@@ -45,6 +53,54 @@
 - `YOUTUBE_PROXY_URL` routes them through a single proxy instead, used for `http` and `https` alike. It is simpler, and it gets banned in turn once enough requests come from that one address.
 - Webshare wins when both are configured. With neither set, requests go direct.
 - The Data API tools are unaffected: they authenticate with the key and never hit this.
+
+## Usage signal
+
+**This is a signalling device for this repository's owner, not a feature of the server. If you are running yt-mcp for yourself, delete it — see "Removing it" below.**
+
+- The problem it solves is a presentation one: a repository whose last commit is months old reads as abandoned, whether or not it is. This publishes the one fact that separates a finished project from a dead one — the date it last did work.
+- The middleware notes the UTC date of each tool call and, on the first call of a new date, commits `usage.json` to this repository through the GitHub contents API. The README badge renders that file.
+- One write per UTC day, not one per call. A process that has already published today does nothing at all on later calls.
+- The date is noted before the tool runs, so a call that ends in an error still counts. The server served a request either way.
+
+### What it records
+
+- One field: `{"last_used": "2026-08-10"}`. A UTC date.
+- Not tool names, not arguments, not channel handles, not video ids, not search queries, not call counts, not totals. None of those are collected, so none of them can leak — which matters, because this repository is public and so is `usage.json`.
+- It reveals when the server was last used, which cuts both ways: the badge advertises a lapse as plainly as it advertises activity.
+
+### Turning it on
+
+- Unset `USAGE_BADGE_TOKEN` is the default and the recommended state. With no token the middleware is never registered, so nothing in `usage.py` runs and a tool call costs exactly what it costs without the feature.
+- With a token set, the signal is on. `USAGE_BADGE_TOKEN` deliberately is not named `GITHUB_TOKEN`: GitHub Actions injects that name automatically, which would switch the signal on inside CI.
+- The token is a fine-grained personal access token with **Contents: read and write** on this repository and nothing else. Set it as a host secret next to `YOUTUBE_API_KEY` — it never belongs in the repository, and `.env` is gitignored.
+- `REPOSITORY` in `src/yt_mcp/usage.py` names the target. A fork that keeps this module writes to the upstream repository and is refused, which is a reason to delete rather than reconfigure.
+
+### What it costs
+
+- One commit per active day, authored by whoever owns the token, on top of whatever real history the repository has.
+- A `contents: write` token inside a running server. Fine-grained tokens cannot be scoped to a single file, so that token can push anything to this repository. That is the trade the feature makes for keeping its log in the repository instead of somewhere else.
+- Nothing on the request path. The write runs as a background task; no caller waits on GitHub.
+
+### When it fails
+
+- Every failure is swallowed and logged at warning level. A tool call never fails because the badge did not update.
+- A failed write releases the day, so the next tool call tries again. There is no retry loop.
+- Two workers racing to publish the same date is a non-event: the second sees the file already current, or gets a stale-sha rejection, and treats either as done.
+
+### Removing it
+
+Five deletions, in any order. Nothing else references any of it.
+
+| Delete | |
+| --- | --- |
+| `src/yt_mcp/usage.py` | the mechanism |
+| `tests/test_usage.py` | its tests |
+| the import and `install_usage_signal(server)` call in `_create_server`, `src/yt_mcp/server.py` | unregisters it |
+| `usage.json`, and the badge and this section from `README.md` | removes the published date and its docs |
+| `USAGE_BADGE_TOKEN` from `.env.example` | removes the last trace |
+
+`httpx` in `pyproject.toml` is there for this feature alone, though it arrives as a `fastmcp` dependency regardless.
 
 ## Quota
 
