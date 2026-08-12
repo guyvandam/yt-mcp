@@ -1,9 +1,14 @@
+<div align="center">
+
+<a href="#usage-signal"><img alt="server last used" height="46" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fguyvandam%2Fyt-mcp%2Fmain%2Fusage.json&query=%24.last_used&label=server%20last%20used&labelColor=24292f&color=2ea043&style=for-the-badge&logo=youtube&logoColor=white"></a>
+
+**Quiet repo, working server.** That date is not a build badge and not hand-edited — the server writes it to `usage.json` itself, on its first tool call of each day. A stale commit log here means the code is finished, not abandoned. See [Usage signal](#usage-signal).
+
+</div>
+
 [![github repo](https://img.shields.io/badge/github-repo-blue?logo=github)](https://github.com/guyvandam/yt-mcp)
 [![python](https://img.shields.io/badge/python-3.13%2B-blue?logo=python&logoColor=white)](https://www.python.org/downloads/)
 [![tests](https://img.shields.io/badge/tests-79%20passing-brightgreen?logo=pytest&logoColor=white)](#development)
-[![in use](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fguyvandam%2Fyt-mcp%2Fmain%2Fusage.json&query=%24.last_used&label=in%20use&color=brightgreen)](#usage-signal)
-
-Quiet repo, working server: the last badge is the date this server last served a tool call, published by the server itself. See "Usage signal".
 
 ## Setup
 
