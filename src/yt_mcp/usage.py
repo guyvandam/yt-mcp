@@ -217,7 +217,7 @@ def _commit(day: date, body: str, sha: str | None) -> dict[str, str]:
         The JSON body for the contents-API call.
     """
     commit = {
-        "message": f"chore(usage): last used {day.isoformat()}",
+        "message": f"[usage-log]: last used {day.isoformat()}",
         "content": base64.b64encode(body.encode()).decode(),
     }
     if sha:
