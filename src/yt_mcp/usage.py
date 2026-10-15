@@ -3,7 +3,7 @@
 This is a signalling device for this repository's owner, not a feature of the
 server. A repository with no recent commits reads as abandoned even when it runs
 every day, and this publishes the one fact that tells those two apart: the UTC
-date of the most recent tool call. It records nothing else — no tool names, no
+date of the most recent tool call. It records nothing else - no tool names, no
 arguments, no counts, no totals.
 
 **Running this server for yourself? Delete this module.** It writes to the
@@ -13,7 +13,7 @@ lines in ``server.py`` that install it. README.md's "Usage signal" section lists
 every file to remove.
 
 The signal is off unless ``USAGE_BADGE_TOKEN`` holds a GitHub token, so a
-checkout or a fork without that secret never reaches any of the code below —
+checkout or a fork without that secret never reaches any of the code below -
 the middleware is not even registered.
 """
 
@@ -31,7 +31,7 @@ from fastmcp.server.middleware import CallNext, Middleware, MiddlewareContext
 from fastmcp.tools import ToolResult
 from mcp.types import CallToolRequestParams
 
-USAGE_TOKEN_ENV = "USAGE_BADGE_TOKEN"  # noqa: S105 — a variable name
+USAGE_TOKEN_ENV = "USAGE_BADGE_TOKEN"  # noqa: S105 - a variable name
 """Environment variable holding the GitHub token that enables the signal."""
 
 REPOSITORY = "guyvandam/yt-mcp"
@@ -57,7 +57,7 @@ _CONTENTS_URL = f"/repos/{REPOSITORY}/contents/{USAGE_FILE}"
 """The contents-API endpoint for the published file."""
 
 _ALREADY_WRITTEN = frozenset({httpx.codes.CONFLICT, httpx.codes.UNPROCESSABLE_ENTITY})
-"""Statuses that mean the blob moved under us — another worker got there first."""
+"""Statuses that mean the blob moved under us - another worker got there first."""
 
 _published: date | None = None
 """The UTC date this process has published, or is in the middle of publishing.
@@ -105,11 +105,14 @@ class UsageSignalMiddleware(Middleware):
         context: MiddlewareContext[CallToolRequestParams],
         call_next: CallNext[CallToolRequestParams, ToolResult],
     ) -> ToolResult:
-        """Note the date, then run the tool.
+        """Note the date, run the tool, and wait for the day's write.
 
         The date is noted before the tool runs, so a call that ends in an error
-        still counts — the server served a request either way. The write happens
-        in the background, so no caller ever waits on GitHub.
+        still counts - the server served a request either way. The write runs
+        alongside the tool, and the call does not return until it ends: a host
+        that pauses the process between requests, as Prefect Horizon does, would
+        otherwise strand it mid-request until the next call, which then finds it
+        timed out. Only the first call of a UTC day waits on GitHub.
 
         Args:
             context: The tool call being handled.
@@ -118,8 +121,14 @@ class UsageSignalMiddleware(Middleware):
         Returns:
             Whatever the tool returned, untouched.
         """
-        note_call()
-        return await call_next(context)
+        write = note_call()
+        try:
+            return await call_next(context)
+        finally:
+            if write is not None:
+                # Shielded: a cancelled call must not cancel the write, which
+                # would skip the guard release in _write and lose the day.
+                await asyncio.shield(write)
 
 
 def note_call() -> asyncio.Task[None] | None:
@@ -128,7 +137,7 @@ def note_call() -> asyncio.Task[None] | None:
     Returns:
         The background write, or ``None`` when today needs no write.
     """
-    global _published  # noqa: PLW0603 — the one-write-per-day guard, see above
+    global _published  # noqa: PLW0603 - the one-write-per-day guard, see above
 
     today = datetime.now(UTC).date()
     if _published == today:
@@ -147,11 +156,11 @@ async def _write(day: date) -> None:
     Args:
         day: The UTC date to publish.
     """
-    global _published  # noqa: PLW0603 — cleared so the next call can retry
+    global _published  # noqa: PLW0603 - cleared so the next call can retry
 
     try:
         await _put(day, usage_token())
-    except Exception:  # noqa: BLE001 — a signal must never fail a tool call
+    except Exception:  # noqa: BLE001 - a signal must never fail a tool call
         # No retry loop: releasing the guard is enough, because the next tool
         # call takes the same path again.
         logger.warning("Usage signal: could not publish %s", day, exc_info=True)

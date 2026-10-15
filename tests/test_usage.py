@@ -249,6 +249,19 @@ def test_a_rejected_token_is_reported(monkeypatch: pytest.MonkeyPatch) -> None:
         asyncio.run(usage._put(date(2026, 8, 10), "ghp_token"))
 
 
+def _ping_server() -> FastMCP:
+    """Build a server with one network-free tool and the signal installed."""
+    server = FastMCP(name="test")
+
+    @server.tool
+    def ping() -> str:
+        """Return a fixed answer, so the test needs no network."""
+        return "pong"
+
+    usage.install_usage_signal(server)
+    return server
+
+
 def test_a_tool_call_survives_an_unreachable_github(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -259,15 +272,7 @@ def test_a_tool_call_survives_an_unreachable_github(
         raise httpx.ConnectError(GITHUB_DOWN)
 
     monkeypatch.setattr(usage, "_put", unreachable)
-
-    server = FastMCP(name="test")
-
-    @server.tool
-    def ping() -> str:
-        """Return a fixed answer, so the test needs no network."""
-        return "pong"
-
-    usage.install_usage_signal(server)
+    server = _ping_server()
 
     async def call_ping() -> object:
         async with Client(server) as client:
@@ -275,6 +280,28 @@ def test_a_tool_call_survives_an_unreachable_github(
 
     assert _drain(call_ping) == "pong"
     assert usage._published is None
+
+
+def test_a_tool_call_returns_only_after_the_days_write(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A host that pauses the process between requests must not strand the write."""
+    monkeypatch.setenv(usage.USAGE_TOKEN_ENV, "ghp_token")
+    written: list[date] = []
+
+    async def slow_record(day: date, token: str) -> None:
+        await asyncio.sleep(0.05)
+        written.append(day)
+
+    monkeypatch.setattr(usage, "_put", slow_record)
+    server = _ping_server()
+
+    async def call_ping() -> list[date]:
+        async with Client(server) as client:
+            await client.call_tool("ping", {})
+            return list(written)
+
+    assert asyncio.run(call_ping()) == [_today()]
 
 
 def test_client_authenticates_the_way_github_expects() -> None:
@@ -290,5 +317,5 @@ def test_client_authenticates_the_way_github_expects() -> None:
 
 
 def test_the_published_file_records_only_a_date() -> None:
-    """No tool names, no arguments, no counts — one field, and it is a date."""
+    """No tool names, no arguments, no counts - one field, and it is a date."""
     assert json.loads(usage._body(date(2026, 8, 10))) == {"last_used": "2026-08-10"}
