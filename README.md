@@ -2,7 +2,7 @@
 
 <a href="#usage-signal"><img alt="server last used" height="46" src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fguyvandam%2Fyt-mcp%2Fmain%2Fusage.json&query=%24.last_used&label=server%20last%20used&labelColor=24292f&color=2ea043&style=for-the-badge&logo=youtube&logoColor=white"></a>
 
-**Quiet repo, working server.** That date is not a build badge and not hand-edited — the server writes it to `usage.json` itself, on its first tool call of each day. A stale commit log here means the code is finished, not abandoned. See [Usage signal](#usage-signal).
+**working code** - the server writes last usage date to `usage.json` itself, on its first tool call of each day. A stale commit log here means the code is finished, not abandoned. See [Usage signal](#usage-signal).
 
 </div>
 
