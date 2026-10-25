@@ -135,7 +135,7 @@ def note_call() -> asyncio.Task[None] | None:
     """Publish today's date unless this process already has.
 
     Returns:
-        The background write, or ``None`` when today needs no write.
+        The write, already running, or ``None`` when today needs no write.
     """
     global _published  # noqa: PLW0603 - the one-write-per-day guard, see above
 
